@@ -1,26 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
-import { JWTPayload } from 'jose'
-import sql from 'mssql'
 
 import DefaultRepository from '../repositories/default.repository'
-
-declare module 'fastify' {
-  export interface FastifyInstance {
-    getSqlPool: (name?: string) => Promise<sql.ConnectionPool>
-  }
-
-  export interface FastifyRequest {
-    jwt: JWTPayload
-    hasRole: (role: string) => boolean
-    hasPermission: (permission: string, scope?: string) => boolean
-  }
-
-  export interface FastifyReply {
-    success: (data?: any, code?: number, executionTime?: number) => FastifyReply
-    fail: (data?: any, code?: number, executionTime?: number) => FastifyReply
-    error: (message?: string, code?: number, executionTime?: number) => FastifyReply
-  }
-}
 
 export default async function (fastify: FastifyInstance) {
   /**
@@ -96,7 +76,7 @@ export default async function (fastify: FastifyInstance) {
    * Delete a specific user default
    * @route DELETE /api/{APP_VERSION}/{serviceName}/default/:id
    */
-  fastify.delete('/:id', async (request: FastifyRequest<{ Params: { id: number }}>, reply: FastifyReply) => {
+  fastify.delete('/:id', async (request: FastifyRequest<{ Params: { id: number } }>, reply: FastifyReply) => {
     try {
       if (!request.jwt)
         return reply.error('missing jwt!', 401)
