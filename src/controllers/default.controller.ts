@@ -197,55 +197,7 @@ class ItemsController {
   }
 
   private getRequestLogger(logger: FastifyBaseLogger): FastifyBaseLogger {
-    let options = { namespace: 'ItemsController' }
+    let options = { namespace: 'DefaultsController' }
     return logger.child(options)
   }
-}
-
-export default async function(fastify: FastifyInstance) {
-  /**
-   * Create a new default for user
-   * @route POST /api/{APP_VERSION}/{serviceName}/default
-   */
-  fastify.post('', async (request: FastifyRequest<{}>, reply: FastifyReply) => {
-    try {
-      if (!request.jwt)
-        return reply.error('missing jwt!', 401)
-
-      const pool = await fastify.getSqlPool()
-      const repo = new DefaultRepository(request.log, pool)
-
-      request.log.debug({}, 'creating default')
-      const data = await repo.create(request.jwt.sub, request.body)
-
-      request.log.debug({ success: data }, 'created default')
-      return reply.success(data)
-    } catch (err) {
-      request.log.error({ err }, 'Failed to create default from database')
-      return reply.error('failed to create default from database')
-    }
-  })
-
-  /**
-   * Update a specific user default
-   * @route put /api/{APP_VERSION}/{serviceName}/default/:id
-   */
-  fastify.put('/:id', async (request: FastifyRequest<{}>, reply: FastifyReply) => {
-    try {
-      if (!request.jwt)
-        return reply.error('missing jwt!', 401)
-
-      const pool = await fastify.getSqlPool()
-      const repo = new DefaultRepository(request.log, pool)
-
-      request.log.debug({}, 'updating default')
-      const data = await repo.update(+request.params.id, request.jwt.sub, request.body)
-
-      request.log.debug({ success: data }, 'updated default')
-      return reply.success(data)
-    } catch (err) {
-      request.log.error({ err }, 'Failed to update default in database')
-      return reply.error('failed to update default in database')
-    }
-  })
 }
