@@ -1,36 +1,213 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
+import { FastifyInstance, FastifyRequest, FastifyReply, FastifyBaseLogger } from 'fastify'
 
 import DefaultRepository from '../repositories/default.repository'
+import { createSqlECSEvent } from '../index'
+import { IECS, IECSEvent } from '../@types/fastify'
 
-export default async function (fastify: FastifyInstance) {
-  /**
-   * Get all default for current user
-   * @route GET /api/{APP_VERSION}/{serviceName}/default
-   */
-  fastify.get('', async (request: FastifyRequest<{}>, reply: FastifyReply) => {
+export default async function register(fastify: FastifyInstance) {
+  const controller = new ItemsController(fastify)
+  controller.registerRoutes()
+}
+
+class ItemsController {
+  private logger: FastifyBaseLogger
+
+  constructor(private fastify: FastifyInstance) {
+    this.logger = this.getRequestLogger(fastify.log)
+    fastify.log = this.logger
+  }
+
+  registerRoutes(): void {
+    this.logger.debug('registerRoutes() -- start')
+
+    try {
+      this.fastify.get('', this.read.bind(this))
+      this.logger.debug(`registerRoutes() -- GET ''`)
+      this.fastify.get('', this.create.bind(this))
+      this.logger.debug(`registerRoutes() -- POST ''`)
+      this.fastify.get('/:id', this.update.bind(this))
+      this.logger.debug(`registerRoutes() -- PUT '/:id'`)
+      this.fastify.get('/:id', this.delete.bind(this))
+      this.logger.debug(`registerRoutes() -- DELETE '/:id'`)
+    } catch (error) {
+      this.logger.error({ error }, 'Error while running registerRoutes()')
+    }
+
+    this.logger.debug('registerRoutes() -- end')
+  }
+
+  async read(request: FastifyRequest, reply: FastifyReply) {
+    request.log = this.getRequestLogger(request.log)
+
+    const start: number = performance.now()
+    let response: FastifyReply
+
+    let event: IECSEvent = createSqlECSEvent('access-default')
     try {
       if (!request.jwt)
         return reply.error('missing jwt!', 401)
 
-      const pool = await fastify.getSqlPool()
+      const pool = await this.fastify.getSqlPool()
       const repo = new DefaultRepository(request.log, pool)
+      const defaults = await repo.list(request.jwt.sub)
 
-      request.log.debug({}, 'fetching default')
-      const data = await repo.list(request.jwt.sub)
-
-      request.log.debug({ default_length: data?.length }, 'fetched default')
-      return reply.success(data)
+      if (defaults && defaults.length > 0) {
+        request.log.debug('procedure run success!')
+        event.outcome = 'success'
+        event.type.push('allowed')
+        response = reply
+          .success(defaults, undefined, performance.now() - start)
+      } else {
+        request.log.warn('procedure run failure!')
+        event.outcome = 'failure'
+        event.type.push('denied')
+        response = reply
+          .fail(undefined, undefined, performance.now() - start)
+      }
     } catch (err) {
-      request.log.error({ err }, 'Failed to fetch default from database')
-      return reply.error('failed to fetch default from database')
+      event.type.push('error')
+      request.log.error({ err }, 'Error while processing request!')
+      response = reply
+        .error('failed to fetch defaults from database', undefined, performance.now() - start)
+    } finally {
+      request.log.info({ event } as IECS)
     }
-  })
 
+    return response
+  }
+
+  async create(request: FastifyRequest<{ Body: any }>, reply: FastifyReply) {
+    request.log = this.getRequestLogger(request.log)
+
+    const start: number = performance.now()
+    let response: FastifyReply
+
+    let event: IECSEvent = createSqlECSEvent('create-default', ['creation'])
+    try {
+      if (!request.jwt)
+        return reply.error('missing jwt!', 401)
+
+      const pool = await this.fastify.getSqlPool()
+      const repo = new DefaultRepository(request.log, pool)
+      const defaults = await repo.create(request.body, request.jwt.sub)
+
+      if (defaults) {
+        request.log.debug('procedure run success!')
+        event.outcome = 'success'
+        event.type.push('allowed')
+        response = reply
+          .success(defaults, undefined, performance.now() - start)
+      } else {
+        request.log.warn('procedure run failure!')
+        event.outcome = 'failure'
+        event.type.push('denied')
+        response = reply
+          .fail(undefined, undefined, performance.now() - start)
+      }
+    } catch (err) {
+      event.type.push('error')
+      request.log.error({ err }, 'Error while processing request!')
+      response = reply
+        .error('failed to fetch defaults from database', undefined, performance.now() - start)
+    } finally {
+      request.log.info({ event } as IECS)
+    }
+
+    return response
+  }
+
+  async update(request: FastifyRequest<{ Params: { id: number }, Body: any }>, reply: FastifyReply) {
+    request.log = this.getRequestLogger(request.log)
+
+    const start: number = performance.now()
+    let response: FastifyReply
+
+    let event: IECSEvent = createSqlECSEvent('update-default', ['change'])
+    try {
+      if (!request.jwt)
+        return reply.error('missing jwt!', 401)
+
+      const pool = await this.fastify.getSqlPool()
+      const repo = new DefaultRepository(request.log, pool)
+      const defaults = await repo.update(+request.params.id, request.body, request.jwt.sub)
+
+      if (defaults) {
+        request.log.debug('procedure run success!')
+        event.outcome = 'success'
+        event.type.push('allowed')
+        response = reply
+          .success(defaults, undefined, performance.now() - start)
+      } else {
+        request.log.warn('procedure run failure!')
+        event.outcome = 'failure'
+        event.type.push('denied')
+        response = reply
+          .fail(undefined, undefined, performance.now() - start)
+      }
+    } catch (err) {
+      event.type.push('error')
+      request.log.error({ err }, 'Error while processing request!')
+      response = reply
+        .error('failed to fetch defaults from database', undefined, performance.now() - start)
+    } finally {
+      request.log.info({ event } as IECS)
+    }
+
+    return response
+  }
+
+  async delete(request: FastifyRequest<{ Params: { id: number } }>, reply: FastifyReply) {
+    request.log = this.getRequestLogger(request.log)
+
+    const start: number = performance.now()
+    let response: FastifyReply
+
+    let event: IECSEvent = createSqlECSEvent('delete-default', ['deletion'])
+    try {
+      if (!request.jwt)
+        return reply.error('missing jwt!', 401)
+
+      const pool = await this.fastify.getSqlPool()
+      const repo = new DefaultRepository(request.log, pool)
+      const defaults = await repo.delete(+request.params.id, request.jwt.sub)
+
+      if (defaults) {
+        request.log.debug('procedure run success!')
+        event.outcome = 'success'
+        event.type.push('allowed')
+        response = reply
+          .success(defaults, undefined, performance.now() - start)
+      } else {
+        request.log.warn('procedure run failure!')
+        event.outcome = 'failure'
+        event.type.push('denied')
+        response = reply
+          .fail(undefined, undefined, performance.now() - start)
+      }
+    } catch (err) {
+      event.type.push('error')
+      request.log.error({ err }, 'Error while processing request!')
+      response = reply
+        .error('failed to delete defaults from database', undefined, performance.now() - start)
+    } finally {
+      request.log.info({ event } as IECS)
+    }
+
+    return response
+  }
+
+  private getRequestLogger(logger: FastifyBaseLogger): FastifyBaseLogger {
+    let options = { namespace: 'ItemsController' }
+    return logger.child(options)
+  }
+}
+
+export default async function(fastify: FastifyInstance) {
   /**
    * Create a new default for user
-   * @route GET /api/{APP_VERSION}/{serviceName}/default
+   * @route POST /api/{APP_VERSION}/{serviceName}/default
    */
-  fastify.get('', async (request: FastifyRequest<{}>, reply: FastifyReply) => {
+  fastify.post('', async (request: FastifyRequest<{}>, reply: FastifyReply) => {
     try {
       if (!request.jwt)
         return reply.error('missing jwt!', 401)
@@ -69,29 +246,6 @@ export default async function (fastify: FastifyInstance) {
     } catch (err) {
       request.log.error({ err }, 'Failed to update default in database')
       return reply.error('failed to update default in database')
-    }
-  })
-
-  /**
-   * Delete a specific user default
-   * @route DELETE /api/{APP_VERSION}/{serviceName}/default/:id
-   */
-  fastify.delete('/:id', async (request: FastifyRequest<{ Params: { id: number } }>, reply: FastifyReply) => {
-    try {
-      if (!request.jwt)
-        return reply.error('missing jwt!', 401)
-
-      const pool = await fastify.getSqlPool()
-      const repo = new DefaultRepository(request.log, pool)
-
-      request.log.debug({}, 'deleting default')
-      const data = await repo.delete(+request.params.id, request.jwt.sub)
-
-      request.log.debug({ success: data }, 'removed default')
-      return reply.success(data)
-    } catch (err) {
-      request.log.error({ err }, 'Failed to delete default from database')
-      return reply.error('failed to delete default from database')
     }
   })
 }
