@@ -3,17 +3,9 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { env } from 'process'
 
 // Sync Controllers
-import actionsController from './controllers/actions.controller'
-import itemsController from './controllers/items.controller'
-import relationsController from './controllers/relations.controller'
-import warehousesController from './controllers/warehouses.controller'
-import safetyQuestionsController from './controllers/safety-questions.controller'
-import logsController from './controllers/logs.controller'
-import techniciansController from './controllers/technicians.controller'
-import locationsController from './controllers/locations.controller'
-import googleMapsController from './controllers/google-maps.controller'
 import { ECSEventCategory, ECSEventType, IECSEvent } from './@types/fastify'
 import oe from '@groupclaes/oe-connector'
+import defaultController from './controllers/default.controller'
 
 const LOGLEVEL = 'debug'
 
@@ -22,9 +14,14 @@ export default async function(config: any): Promise<FastifyInstance | undefined>
 
   if (config && config.wrapper) {
     try {
+      if (!config.wrapper.mssql && config.mssql) {
+        config.wrapper.mssql = config.mssql
+      }
       // force enable ecs format
       // config.wrapper.ecs = true
       config.wrapper.fastify.requestLogging = true
+      config.wrapper.cors = { origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] }
+      config.wrapper.jwt = {}
 
       fastify = await Fastify(config.wrapper)
 
@@ -85,5 +82,5 @@ export function createECSEvent(category: ECSEventCategory[], action: string, dat
 }
 
 export function createSqlECSEvent(action: string, type: ECSEventType[] = ['access']): IECSEvent {
-  return createECSEvent(['database'], action, 'mssql.access', type)
+  return createECSEvent(['database'], action, 'mssql.client', type)
 }

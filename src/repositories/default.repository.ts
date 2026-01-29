@@ -1,8 +1,9 @@
 import sql from 'mssql'
 import { FastifyBaseLogger } from 'fastify'
 
+const SCHEMA: string = 'dbo.'
+
 export default class DefaultRepository {
-  schema: string = 'dbo.'
   _logger: FastifyBaseLogger
   _pool: sql.ConnectionPool
 
@@ -14,14 +15,15 @@ export default class DefaultRepository {
   async list(user_id?: string): Promise<any[]> {
     const r = new sql.Request(this._pool)
     r.input('user_id', sql.Int, user_id)
-    const result = await r.execute(this.schema + 'procedure_name').catch(err => {
+    const result = await r.execute(SCHEMA + 'procedure_name').catch(err => {
       this._logger.error({ err }, 'error while executing sql procedure')
     })
 
-    if (!result)
+    if (!result) {
       return []
+    }
 
-    this._logger.debug({ result }, `Exeecuting procedure ${this.schema}procedure_name result`)
+    this._logger.debug({ result }, `Executing procedure ${SCHEMA}procedure_name result`)
 
     return result.recordset.length > 0 ? result.recordset[0] : []
   }
@@ -30,14 +32,16 @@ export default class DefaultRepository {
     const r = new sql.Request(this._pool)
     r.input('user_id', sql.Int, user_id)
     r.input('data_name', sql.VarChar, data.name)
-    const result = await r.execute(this.schema + 'procedure_name').catch(err => {
+    const result = await r.execute(SCHEMA + 'procedure_name').catch(err => {
       this._logger.error({ err }, 'error while executing sql procedure')
     })
 
-    if (!result)
-      return false
 
-    this._logger.debug({ result }, `Exeecuting procedure ${this.schema}procedure_name result`)
+    if (!result) {
+      return false
+    }
+
+    this._logger.debug({ result }, `Executing procedure ${SCHEMA}procedure_name result`)
 
     return result.rowsAffected[0] > 0
   }
@@ -47,14 +51,16 @@ export default class DefaultRepository {
     r.input('user_id', sql.Int, user_id)
     r.input('id', sql.Int, id)
     r.input('data_name', sql.VarChar, data.name)
-    const result = await r.execute(this.schema + 'procedure_name').catch(err => {
+    const result = await r.execute(SCHEMA + 'procedure_name').catch(err => {
       this._logger.error({ err }, 'error while executing sql procedure')
     })
 
-    if (!result)
-      return false
 
-    this._logger.debug({ result }, `Exeecuting procedure ${this.schema}procedure_name result`)
+    if (!result) {
+      return false
+    }
+
+    this._logger.debug({ result }, `Executing procedure ${SCHEMA}procedure_name result`)
 
     return result.rowsAffected[0] > 0
   }
@@ -63,14 +69,15 @@ export default class DefaultRepository {
     const r = new sql.Request(this._pool)
     r.input('user_id', sql.Int, user_id)
     r.input('id', sql.Int, id)
-    const result = await r.execute(this.schema + 'procedure_name').catch(err => {
+    const result = await r.execute(SCHEMA + 'procedure_name').catch(err => {
       this._logger.error({ err }, 'error while executing sql procedure')
     })
 
-    if (!result)
+    if (!result) {
       return false
+    }
 
-    this._logger.debug({ result }, `Exeecuting procedure ${this.schema}procedure_name result`)
+    this._logger.debug({ result }, `Exeecuting procedure ${SCHEMA}procedure_name result`)
 
     return result.rowsAffected[0] > 0
   }

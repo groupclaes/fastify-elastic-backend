@@ -49,14 +49,14 @@ class ItemsController {
 
       const pool = await this.fastify.getSqlPool()
       const repo = new DefaultRepository(request.log, pool)
-      const defaults = await repo.list(request.jwt.sub)
+      const dbResult = await repo.list(request.jwt.sub)
 
-      if (defaults && defaults.length > 0) {
+      if (dbResult && dbResult.length > 0) {
         request.log.debug('procedure run success!')
         event.outcome = 'success'
         event.type.push('allowed')
         response = reply
-          .success(defaults, undefined, performance.now() - start)
+          .success(dbResult, undefined, performance.now() - start)
       } else {
         request.log.warn('procedure run failure!')
         event.outcome = 'failure'
@@ -89,14 +89,14 @@ class ItemsController {
 
       const pool = await this.fastify.getSqlPool()
       const repo = new DefaultRepository(request.log, pool)
-      const defaults = await repo.create(request.body, request.jwt.sub)
+      const dbResult = await repo.create(request.body, request.jwt.sub)
 
-      if (defaults) {
+      if (dbResult) {
         request.log.debug('procedure run success!')
         event.outcome = 'success'
         event.type.push('allowed')
         response = reply
-          .success(defaults, undefined, performance.now() - start)
+          .success(dbResult, undefined, performance.now() - start)
       } else {
         request.log.warn('procedure run failure!')
         event.outcome = 'failure'
@@ -129,14 +129,14 @@ class ItemsController {
 
       const pool = await this.fastify.getSqlPool()
       const repo = new DefaultRepository(request.log, pool)
-      const defaults = await repo.update(+request.params.id, request.body, request.jwt.sub)
+      const dbResult = await repo.update(+request.params.id, request.body, request.jwt.sub)
 
-      if (defaults) {
+      if (dbResult) {
         request.log.debug('procedure run success!')
         event.outcome = 'success'
         event.type.push('allowed')
         response = reply
-          .success(defaults, undefined, performance.now() - start)
+          .success(dbResult, undefined, performance.now() - start)
       } else {
         request.log.warn('procedure run failure!')
         event.outcome = 'failure'
@@ -169,14 +169,14 @@ class ItemsController {
 
       const pool = await this.fastify.getSqlPool()
       const repo = new DefaultRepository(request.log, pool)
-      const defaults = await repo.delete(+request.params.id, request.jwt.sub)
+      const dbResult = await repo.delete(+request.params.id, request.jwt.sub)
 
-      if (defaults) {
+      if (dbResult) {
         request.log.debug('procedure run success!')
         event.outcome = 'success'
         event.type.push('allowed')
         response = reply
-          .success(defaults, undefined, performance.now() - start)
+          .success(dbResult, undefined, performance.now() - start)
       } else {
         request.log.warn('procedure run failure!')
         event.outcome = 'failure'
