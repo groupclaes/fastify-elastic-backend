@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@groupclaes/fastify-elastic": "5.0",
-    "fastify": "^5.6.0",
+    "fastify": "^5.7.4",
     "jose": "^6.1.0",
     "mssql": "^12.2.0"
   },
